@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2937">
+
+
+<title>Irene's Marathon Coach</title>
+<style>
+:root{
+  --bg:#f5f7fa; --card:#fff; --text:#172033; --muted:#657084; --line:#dde3ea;
+  --accent:#334155; --soft:#eef2f7; --good:#e8f5eb; --warn:#fff4d6; --bad:#fdeaea;
+  --run:#e8eef8; --swim:#e8f5f7; --climb:#f3edf8; --rest:#f1f2f4;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+.app{max-width:760px;margin:auto;padding:16px 14px 90px}
+header{padding:12px 4px 10px}
+h1{font-size:27px;margin:0 0 4px;letter-spacing:-.5px}
+.sub{color:var(--muted);font-size:14px;line-height:1.4}
+.tabs{display:flex;gap:8px;position:sticky;top:0;background:rgba(245,247,250,.96);padding:10px 0;z-index:5}
+.tabs button{flex:1;border:1px solid var(--line);background:white;padding:10px 8px;border-radius:12px;font-weight:650;color:var(--text)}
+.tabs button.active{background:var(--accent);color:white;border-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:10px 0}
+.hero{padding:19px}
+.kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750}
+.big{font-size:28px;font-weight:800;margin:6px 0}
+.pace{display:inline-block;margin-top:6px;padding:6px 9px;background:var(--soft);border-radius:10px;font-weight:700}
+.note{font-size:14px;line-height:1.5;color:var(--muted);margin-top:9px}
+.alert{border-radius:13px;padding:12px 13px;margin:10px 0;font-size:14px;line-height:1.45}
+.alert.good{background:var(--good)} .alert.warn{background:var(--warn)} .alert.bad{background:var(--bad)}
+button.primary{border:0;background:var(--accent);color:#fff;border-radius:12px;padding:12px 14px;font-size:16px;font-weight:700;width:100%}
+button.secondary{border:1px solid var(--line);background:white;color:var(--text);border-radius:11px;padding:10px 12px;font-weight:650}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--soft);padding:12px;border-radius:12px}
+.stat .v{font-size:20px;font-weight:800}.stat .l{font-size:12px;color:var(--muted);margin-top:3px}
+.week{margin:12px 0 18px}
+.week h3{font-size:16px;margin:0 0 8px}
+.session{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:11px 10px;border-top:1px solid var(--line)}
+.session:first-of-type{border-top:0}
+.day{font-size:13px;font-weight:750;color:var(--muted)}
+.sname{font-weight:700}.sdetail{font-size:12px;color:var(--muted);margin-top:3px}
+.badge{font-size:11px;font-weight:750;padding:5px 7px;border-radius:8px;white-space:nowrap}
+.run{background:var(--run)} .swim{background:var(--swim)} .climb{background:var(--climb)} .rest{background:var(--rest)}
+.done{opacity:.58}.done .sname{text-decoration:line-through}
+form label{display:block;font-size:13px;font-weight:700;margin:12px 0 5px}
+input,select,textarea{width:100%;font:inherit;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+textarea{min-height:70px;resize:vertical}
+.checkrow{display:flex;align-items:center;gap:9px;margin:13px 0}
+.checkrow input{width:auto}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.small{font-size:12px;color:var(--muted)}
+.progressbar{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}
+.progressbar > div{height:100%;background:var(--accent);border-radius:999px}
+footer{font-size:11px;color:var(--muted);line-height:1.45;margin-top:18px}
+@media(max-width:430px){.grid2{grid-template-columns:1fr}.session{grid-template-columns:52px 1fr}.session .badge{grid-column:2;justify-self:start}.big{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Marathon Coach</h1>
+  <div class="sub">London 2027 · adaptive plan built around 3 core runs, Tuesday swim, Wednesday climbing, and your treadmill-only ship block.</div>
+</header>
+
+<nav class="tabs" aria-label="App sections">
+  <button class="active" data-tab="today">Today</button>
+  <button data-tab="plan">Plan</button>
+  <button data-tab="progress">Progress</button>
+</nav>
+
+<section id="today" class="panel active">
+  <div id="todayCard"></div>
+  <div id="recoveryCard"></div>
+</section>
+
+<section id="plan" class="panel">
+  <div class="card">
+    <div class="kicker">Training principle</div>
+    <div class="note">Three core runs are the default. Optional runs are only added when recovery is good. During the ship block (28 Jan–28 Mar), swimming and climbing disappear and the plan switches to treadmill-only training.</div>
+  </div>
+  <div id="planList"></div>
+</section>
+
+<section id="progress" class="panel">
+  <div id="progressSummary"></div>
+  <div class="card">
+    <div class="kicker">Your data</div>
+    <div class="note">Logs are stored only in this browser on this device. Export a backup occasionally, especially before clearing Safari data or changing phones.</div>
+    <div class="grid2" style="margin-top:12px">
+      <button class="secondary" id="exportBtn" type="button">Export backup</button>
+      <label class="secondary" style="text-align:center;cursor:pointer;margin:0">
+        Import backup
+        <input id="importInput" type="file" accept="application/json" style="display:none">
+      </label>
+    </div>
+  </div>
+</section>
+
+<footer>
+Pace is guidance, not a test. For easy and long runs, conversational effort overrides the displayed pace. If pain changes your gait, worsens as you run, or persists, stop and seek appropriate clinical advice rather than using the app to push through it.
+</footer>
+</div>
+
+<div id="logModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:20;padding:18px;overflow:auto">
+  <div class="card" style="max-width:540px;margin:30px auto">
+    <h2 style="margin-top:0">Log session</h2>
+    <div id="logSessionName" class="note"></div>
+    <form id="logForm">
+      <input type="hidden" id="logDate">
+      <label for="completed">Outcome</label>
+      <select id="completed">
+        <option value="yes">Completed</option>
+        <option value="partial">Partly completed</option>
+        <option value="no">Skipped</option>
+      </select>
+      <div class="grid2">
+        <div><label for="distance">Distance (km)</label><input id="distance" type="number" min="0" step="0.01"></div>
+        <div><label for="minutes">Time (minutes)</label><input id="minutes" type="number" min="0" step="0.1"></div>
+      </div>
+      <div class="grid2">
+        <div><label for="rpe">RPE (1–10)</label><input id="rpe" type="number" min="1" max="10" step="1"></div>
+        <div><label for="hr">Average HR (optional)</label><input id="hr" type="number" min="40" max="230" step="1"></div>
+      </div>
+      <div class="checkrow"><input id="pain" type="checkbox"><label for="pain" style="margin:0">Pain or niggle affected the session</label></div>
+      <label for="notes">Notes</label>
+      <textarea id="notes" placeholder="How did it feel? Legs, breathing, treadmill, sleep, etc."></textarea>
+      <div class="grid2" style="margin-top:14px">
+        <button type="button" class="secondary" id="cancelLog">Cancel</button>
+        <button type="submit" class="primary">Save & adapt</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const DAY = 86400000;
+const START = new Date("2026-08-31T12:00:00");
+const RACE = new Date("2027-04-25T12:00:00");
+const SHIP_START = new Date("2027-01-28T12:00:00");
+const SHIP_END = new Date("2027-03-28T12:00:00");
+
+const basePaces = {
+  recovery:[410,450], easy:[395,430], long:[390,425],
+  brisk:[340,355], steady:[350,365], tempo:[330,345],
+  mp:[325,330], strides:null
+};
+
+const longRuns = [
+  8,9.5,10.5,12,13,14,11.5,15,16,
+  17,18,14,19,20,16,20,17,15,
+  18,20,21,18,22,23,20,
+  22,24,25,27,21,28,25,30,23,
+  20,26,22,16,12,8
+];
+
+function iso(d){ return d.toISOString().slice(0,10); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function weekIndex(d){ return Math.floor((d-START)/(7*DAY)); }
+function fmtDate(d){ return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}); }
+function paceTxt(sec){
+  const m=Math.floor(sec/60), s=Math.round(sec%60);
+  return `${m}:${String(s).padStart(2,"0")}/km`;
+}
+function rangeTxt(range, offset=0){
+  if(!range) return "Relaxed fast strides";
+  return `${paceTxt(range[0]+offset)}–${paceTxt(range[1]+offset)}`;
+}
+
+function phaseFor(d){
+  if(d < new Date("2026-09-21")) return "Re-entry";
+  if(d < new Date("2026-11-02")) return "Rebuild";
+  if(d < new Date("2027-01-04")) return "Base";
+  if(d < SHIP_START) return "Ship prep";
+  if(d <= SHIP_END) return "Treadmill block";
+  if(d < new Date("2027-04-12")) return "Back outdoors";
+  return "Taper";
+}
+
+function qualityFor(w, d){
+  const phase=phaseFor(d);
+  if(phase==="Re-entry"){
+    if(w<1) return {name:"Easy run", km:5, type:"easy", detail:"Conversational. No pace chasing."};
+    if(w===1) return {name:"Easy run", km:5, type:"easy", detail:"Keep it relaxed."};
+    return {name:"Easy + strides", km:6, type:"easy", detail:"Finish with 4 × 20 s relaxed strides."};
+  }
+  if(phase==="Rebuild"){
+    const opts=[
+      ["6 × 1 min brisk",7,"brisk","2 min easy between reps"],
+      ["5 × 2 min brisk",8,"brisk","2 min easy between reps"],
+      ["15 min steady",8.5,"steady","Controlled, not threshold"],
+      ["Easy + strides",6.5,"easy","4–6 × 20 s relaxed strides"],
+      ["2 × 8 min tempo",9,"tempo","3 min easy between blocks"],
+      ["3 × 7 min tempo",9,"tempo","3 min easy between blocks"]
+    ];
+    const q=opts[Math.max(0,Math.min(opts.length-1,w-3))];
+    return {name:q[0],km:q[1],type:q[2],detail:q[3]};
+  }
+  if(phase==="Base"){
+    const cycle=w%4;
+    if(cycle===2) return {name:"Easy + strides",km:7,type:"easy",detail:"Cutback week"};
+    if(cycle===0) return {name:"3 × 8 min tempo",km:9,type:"tempo",detail:"3 min easy between blocks"};
+    if(cycle===1) return {name:"5 × 4 min threshold",km:9.5,type:"tempo",detail:"2 min easy between reps"};
+    return {name:"25 min tempo",km:10,type:"tempo",detail:"Comfortably hard, controlled"};
+  }
+  if(phase==="Ship prep"){
+    return {name:"3 × 10 min tempo",km:10,type:"tempo",detail:"3 min easy between blocks"};
+  }
+  if(phase==="Treadmill block"){
+    const shipW=Math.floor((d-SHIP_START)/(7*DAY));
+    const q=[
+      ["3 × 10 min tempo",10,"tempo","1% incline; 3 min easy"],
+      ["3 × 3 km steady/MP",11,"mp","1 km easy between"],
+      ["2 × 5 km marathon effort",12,"mp","1 km easy between"],
+      ["Lighter steady run",8,"steady","Cutback week"],
+      ["10 km continuous marathon effort",13,"mp","Controlled throughout"],
+      ["Threshold intervals",10,"tempo","Keep total hard running modest"],
+      ["Marathon effort blocks",12,"mp","Do not race the workout"],
+      ["Controlled MP",9,"mp","Reduced volume"]
+    ][Math.max(0,Math.min(7,shipW))];
+    return {name:q[0],km:q[1],type:q[2],detail:q[3]};
+  }
+  if(phase==="Back outdoors"){
+    return {name:"Controlled marathon effort",km:9,type:"mp",detail:"Outdoor reacclimatisation; effort first"};
+  }
+  return {name:"Short marathon-pace touch",km:7,type:"mp",detail:"Small dose only; stay fresh"};
+}
+
+function plannedWeek(w){
+  const mon=addDays(START,w*7);
+  if(mon>RACE) return [];
+  const phase=phaseFor(mon);
+  const longKm=longRuns[Math.min(w,longRuns.length-1)] || Math.max(8,30-(w-longRuns.length)*4);
+  const q=qualityFor(w,addDays(mon,3));
+  let easyKm = phase==="Re-entry" ? [5,6,6.5][Math.min(w,2)] : 
+               phase==="Taper" ? 5 : 
+               phase==="Treadmill block" ? 8 : 
+               phase==="Back outdoors" ? 7 : 
+               Math.min(8,6 + w*0.12);
+  const sessions=[];
+
+  if(phase==="Treadmill block"){
+    sessions.push(
+      {date:iso(mon),kind:"Run",priority:"Core",name:"Easy treadmill run",km:easyKm,type:"easy",detail:"Easy; 0.5–1% incline if comfortable."},
+      {date:iso(addDays(mon,1)),kind:"Rest",priority:"Recovery",name:"Rest / mobility",detail:"No swimming available during ship block."},
+      {date:iso(addDays(mon,2)),kind:"Rest",priority:"Recovery",name:"Rest / mobility",detail:"Keep legs fresh for quality."},
+      {date:iso(addDays(mon,3)),kind:"Run",priority:"Core",...q},
+      {date:iso(addDays(mon,4)),kind:"Rest",priority:"Recovery",name:"Rest",detail:""},
+      {date:iso(addDays(mon,5)),kind:"Run",priority:"Optional",name:"Recovery treadmill run",km:5.5,type:"recovery",detail:"Only if recovered."},
+      {date:iso(addDays(mon,6)),kind:"Run",priority:"Core",name:"Long treadmill run",km:longKm,type:"long",detail:"Easy unless the workout explicitly contains MP."}
+    );
+  } else {
+    sessions.push(
+      {date:iso(mon),kind:"Run",priority:"Core",name:"Easy run",km:easyKm,type:"easy",detail:"Conversational; recovery from Sunday."},
+      {date:iso(addDays(mon,1)),kind:"Swim",priority:"Core",name:"Swim 3–4 km",km:3.5,detail:"Usual Tuesday swim. Aerobic unless otherwise planned."},
+      {date:iso(addDays(mon,2)),kind:"Climb",priority:"Core",name:"Climbing",detail: phase==="Taper" ? "Keep this light; stop climbing in final 10–14 days." : "Normal weekly climbing session."},
+      {date:iso(addDays(mon,3)),kind:"Run",priority:"Core",...q},
+      {date:iso(addDays(mon,4)),kind:"Rest",priority:"Recovery",name:"Rest",detail:""},
+      {date:iso(addDays(mon,5)),kind:"Run",priority:"Optional",name:"Recovery run",km: phase==="Taper"?4:5,type:"recovery",detail:"Very easy; skip whenever fatigue is accumulating."},
+      {date:iso(addDays(mon,6)),kind:"Run",priority:"Core",name: phase==="Taper" && longKm<=8 ? "Easy run":"Long easy run",km:longKm,type:"long",detail:"Conversational effort. Do not force the displayed pace."}
+    );
+  }
+  return sessions;
+}
+
+function allSessions(){
+  let all=[];
+  for(let w=0; w<40; w++) all=all.concat(plannedWeek(w));
+  return all.filter(s=>new Date(s.date+"T12:00:00")<=RACE);
+}
+
+const sessions=allSessions();
+let logs=JSON.parse(localStorage.getItem("marathonLogs")||"{}");
+
+function saveLogs(){ localStorage.setItem("marathonLogs",JSON.stringify(logs)); }
+
+function recentAdaptation(today){
+  const cutoff=addDays(today,-14);
+  const entries=Object.entries(logs).filter(([date,l])=>{
+    const d=new Date(date+"T12:00:00");
+    return d>=cutoff && d<=today && l.completed!=="no";
+  });
+  if(!entries.length) return {offset:0,volume:1,quality:true,msg:"No recent logs yet — using conservative comeback targets."};
+
+  const rpes=entries.map(([,l])=>Number(l.rpe)).filter(Number.isFinite);
+  const pain=entries.some(([,l])=>l.pain);
+  const missed=Object.values(logs).filter(l=>l.completed==="no").length;
+  const meanRpe=rpes.length?rpes.reduce((a,b)=>a+b,0)/rpes.length:null;
+
+  if(pain) return {offset:20,volume:.8,quality:false,msg:"Pain/niggle logged recently: next 7 days are automatically softened by ~20% and quality becomes easy."};
+  if(meanRpe!==null && meanRpe>=7) return {offset:15,volume:.9,quality:false,msg:"Recent effort has been high: pace is relaxed and the next quality session is converted to easy running."};
+  if(meanRpe!==null && meanRpe<=4 && entries.length>=3) return {offset:-5,volume:1.03,quality:true,msg:"Recovery looks good: the app allows a very small progression. Keep easy running genuinely easy."};
+  return {offset:0,volume:1,quality:true,msg:"Training response looks stable: keep the planned progression."};
+}
+
+function adaptedSession(s, today){
+  const a=recentAdaptation(today);
+  const d=new Date(s.date+"T12:00:00");
+  const future = d>=today;
+  let x={...s};
+  if(future && x.kind==="Run"){
+    if(a.volume!==1 && x.km) x.km=Math.round(x.km*a.volume*2)/2;
+    if(!a.quality && ["tempo","brisk","steady","mp"].includes(x.type)){
+      x.name="Easy run (adapted)";
+      x.type="easy";
+      x.detail="Quality removed because recent recovery/pain data suggest backing off.";
+    }
+  }
+  return x;
+}
+
+function sessionPace(s,today){
+  if(s.kind!=="Run") return "";
+  const a=recentAdaptation(today);
+  const type=s.type || "easy";
+  const p=basePaces[type] || basePaces.easy;
+  return rangeTxt(p, a.offset);
+}
+
+function todayDate(){
+  const n=new Date();
+  n.setHours(12,0,0,0);
+  return n;
+}
+
+function renderToday(){
+  const now=todayDate();
+  const key=iso(now);
+  let s=sessions.find(x=>x.date===key);
+  if(!s){
+    document.getElementById("todayCard").innerHTML='<div class="card hero"><div class="big">No planned session today</div><div class="note">Use the Plan tab to see what is coming next.</div></div>';
+    return;
+  }
+  s=adaptedSession(s,now);
+  const log=logs[key];
+  const pace=sessionPace(s,now);
+  document.getElementById("todayCard").innerHTML=`
+    <div class="card hero">
+      <div class="kicker">${fmtDate(now)} · ${phaseFor(now)}</div>
+      <div class="big">${s.name}${s.km?` · ${s.km} km`:""}</div>
+      ${pace?`<div class="pace">${pace}</div>`:""}
+      <div class="note">${s.detail||""}</div>
+      ${log?`<div class="alert good">Logged: ${log.completed==="yes"?"completed":log.completed==="partial"?"partly completed":"skipped"}${log.rpe?` · RPE ${log.rpe}`:""}.</div>`:""}
+      <button class="primary" id="logToday">${log?"Edit log":"Log this session"}</button>
+    </div>`;
+  document.getElementById("logToday").addEventListener("click",()=>openLog(s));
+  const a=recentAdaptation(now);
+  const cls=a.quality&&a.volume>=1 ? "good" : a.volume<1 ? "warn":"good";
+  document.getElementById("recoveryCard").innerHTML=`<div class="alert ${cls}"><strong>Adaptive coach:</strong> ${a.msg}</div>`;
+}
+
+function renderPlan(){
+  const now=todayDate();
+  const startW=Math.max(0,weekIndex(now)-1);
+  const endW=Math.min(39,startW+10);
+  let html="";
+  for(let w=startW;w<=endW;w++){
+    const mon=addDays(START,w*7);
+    const week=plannedWeek(w);
+    if(!week.length) continue;
+    const runKm=week.filter(s=>s.kind==="Run"&&s.km).reduce((a,s)=>a+s.km,0);
+    html+=`<div class="card week"><h3>Week of ${mon.toLocaleDateString("en-GB",{day:"numeric",month:"short"})} · ${phaseFor(mon)} <span class="small">(~${Math.round(runKm)} km incl. optional)</span></h3>`;
+    week.forEach(raw=>{
+      const s=adaptedSession(raw,now), l=logs[s.date], d=new Date(s.date+"T12:00:00");
+      const cls=(s.kind||"rest").toLowerCase();
+      html+=`<div class="session ${l?"done":""}">
+        <div class="day">${fmtDate(d)}</div>
+        <div>
+          <div class="sname">${s.name}${s.km?` · ${s.km} km`:""}</div>
+          <div class="sdetail">${sessionPace(s,now)?sessionPace(s,now)+" · ":""}${s.detail||""}</div>
+        </div>
+        <button type="button" class="badge ${cls}" data-log="${s.date}">${l?"Logged":s.priority}</button>
+      </div>`;
+    });
+    html+="</div>";
+  }
+  document.getElementById("planList").innerHTML=html;
+  document.querySelectorAll("[data-log]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const s=sessions.find(x=>x.date===btn.dataset.log);
+      if(s) openLog(adaptedSession(s,now));
+    });
+  });
+}
+
+function renderProgress(){
+  const runLogs=Object.entries(logs).filter(([d,l])=>l.completed!=="no" && Number(l.distance)>0);
+  const total=runLogs.reduce((a,[,l])=>a+Number(l.distance||0),0);
+  const rpes=runLogs.map(([,l])=>Number(l.rpe)).filter(Number.isFinite);
+  const avgRpe=rpes.length?(rpes.reduce((a,b)=>a+b,0)/rpes.length).toFixed(1):"—";
+  const last28=runLogs.filter(([d])=>new Date(d+"T12:00:00")>=addDays(todayDate(),-28)).reduce((a,[,l])=>a+Number(l.distance||0),0);
+  const completed=Object.values(logs).filter(l=>l.completed==="yes").length;
+  document.getElementById("progressSummary").innerHTML=`
+    <div class="card">
+      <div class="kicker">Logged training</div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="stat"><div class="v">${total.toFixed(1)} km</div><div class="l">total run distance logged</div></div>
+        <div class="stat"><div class="v">${last28.toFixed(1)} km</div><div class="l">last 28 days</div></div>
+        <div class="stat"><div class="v">${avgRpe}</div><div class="l">average RPE</div></div>
+        <div class="stat"><div class="v">${completed}</div><div class="l">sessions completed</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="kicker">Current objective</div>
+      <div class="big" style="font-size:21px">${phaseFor(todayDate())}</div>
+      <div class="note">Right now the priority is consistency and running-specific durability. The app deliberately avoids forcing 3:45 marathon pace while you are rebuilding.</div>
+    </div>`;
+}
+
+function openLog(s){
+  const old=logs[s.date]||{};
+  document.getElementById("logDate").value=s.date;
+  document.getElementById("logSessionName").textContent=`${s.name}${s.km?` · planned ${s.km} km`:""}`;
+  document.getElementById("completed").value=old.completed||"yes";
+  document.getElementById("distance").value=old.distance??(s.kind==="Run"&&s.km?s.km:"");
+  document.getElementById("minutes").value=old.minutes??"";
+  document.getElementById("rpe").value=old.rpe??"";
+  document.getElementById("hr").value=old.hr??"";
+  document.getElementById("pain").checked=!!old.pain;
+  document.getElementById("notes").value=old.notes||"";
+  document.getElementById("logModal").style.display="block";
+}
+function closeLog(){ document.getElementById("logModal").style.display="none"; }
+
+document.getElementById("logForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const date=document.getElementById("logDate").value;
+  logs[date]={
+    completed:document.getElementById("completed").value,
+    distance:Number(document.getElementById("distance").value)||0,
+    minutes:Number(document.getElementById("minutes").value)||0,
+    rpe:Number(document.getElementById("rpe").value)||null,
+    hr:Number(document.getElementById("hr").value)||null,
+    pain:document.getElementById("pain").checked,
+    notes:document.getElementById("notes").value.trim()
+  };
+  saveLogs(); closeLog(); renderAll();
+});
+document.getElementById("cancelLog").addEventListener("click",closeLog);
+document.getElementById("logModal").addEventListener("click",e=>{if(e.target.id==="logModal")closeLog();});
+
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("active",x===b));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===b.dataset.tab));
+}));
+
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify({version:1,exported:new Date().toISOString(),logs},null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="marathon-coach-backup.json"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+document.getElementById("importInput").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{
+    const data=JSON.parse(await f.text());
+    if(!data.logs || typeof data.logs!=="object") throw new Error("Invalid backup");
+    logs=data.logs; saveLogs(); renderAll(); alert("Backup imported.");
+  }catch(err){ alert("I could not read that backup file."); }
+  e.target.value="";
+});
+
+function renderAll(){ renderToday(); renderPlan(); renderProgress(); }
+renderAll();
+
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
