@@ -1,7 +1,7 @@
 {
   "name": "Irene Marathon Coach",
   "short_name": "Run Coach",
-  "description": "Adaptive London Marathon training plan for Irene",
+  "description": "Adaptive London Marathon training plan with past-workout logging and local Strava screenshots",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

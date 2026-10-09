@@ -1,4 +1,4 @@
-const CACHE_NAME = "irene-marathon-coach-v2-20260925";
+const CACHE_NAME = "irene-marathon-coach-v3-20261009";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
